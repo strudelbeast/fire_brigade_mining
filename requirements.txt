@@ -1,0 +1,5 @@
+datetime
+pymongo
+python-dotenv
+pydantic
+requests
