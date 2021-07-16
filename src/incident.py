@@ -6,10 +6,10 @@ from operating_resource import OperatingResource
 class Incident(BaseModel) :
     incident_id: str
     alarm_keyword: Optional[str]
-    alarm_description: str
+    alarm_description: Optional[str]
     place: Optional[str]
     incident_number: int
-    district: str
+    district: Optional[str]
     start_dtime: dt.datetime
     end_dtime: Optional[dt.datetime]
     operating_ressources: List[OperatingResource]

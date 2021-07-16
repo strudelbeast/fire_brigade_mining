@@ -4,38 +4,42 @@ from incident import Incident
 from operating_resource import OperatingResource
 from pymongo import collection
 import json
-
+import traceback
 
 def save_to_db(collection: collection, data: list):
     handle_ended_incidents(collection, data)
 
     for incident in data:
-        incident_id = incident.get('i')
-        incident_operating_ressources = load_incident_operating_ressources_from_incident_id(incident_id)
+        try:
+            incident_id = incident.get('i')
+            incident_operating_ressources = load_incident_operating_ressources_from_incident_id(incident_id)
 
-        item: Incident = collection.find_one({"_id": incident_id})
+            item: Incident = collection.find_one({"_id": incident_id})
 
-        new_incident = Incident(
-            _id=incident_id,
-            alarm_keyword=incident.get('a') if incident.get('a') != '' else None,
-            alarm_description=incident.get('m'),
-            place=incident.get('o') if incident.get('o') != '' else None,
-            incident_number=incident_n_to_number(incident.get('n')),
-            district=district_map_mappings[incident.get('b')],
-            start_dtime=dt.datetime.strptime(incident.get('d') + ' ' + incident.get('t'), '%d.%m.%Y %H:%M:%S'),
-            end_dtime=None,
-            operating_ressources=incident_operating_ressources
-        )
-
-        if item is None:
-            # Not in db
-            collection.insert_one(new_incident.dict(by_alias=True))
-        else:
-            if item != new_incident:
-                query = {'_id': incident_id}
-                update = {'$set': new_incident.dict(by_alias=True)}
-                collection.update_one(query, update, upsert=False)
-
+            new_incident = Incident(
+                _id=incident_id,
+                alarm_keyword=incident.get('a') if incident.get('a') != '' else None,
+                alarm_description=incident.get('m') if incident.get('m') != '' else None,
+                place=incident.get('o') if incident.get('o') != '' else None,
+                incident_number=incident_n_to_number(incident.get('n')),
+                district=district_map_mappings[incident.get('b')] if incident.get('b') != '' else None,
+                start_dtime=dt.datetime.strptime(incident.get('d') + ' ' + incident.get('t'), '%d.%m.%Y %H:%M:%S'),
+                end_dtime=None,
+                operating_ressources=incident_operating_ressources
+            )
+            if item is None:
+                # Not in db
+                collection.insert_one(new_incident.dict(by_alias=True))
+            else:
+                if item != new_incident:
+                    query = {'_id': incident_id}
+                    update = {'$set': new_incident.dict(by_alias=True)}
+                    collection.update_one(query, update, upsert=False)
+        except KeyError:
+            timestampStr = dt.datetime.now().strftime("[%d-%b-%Y %H:%M:%S]")
+            print(timestampStr, "Key Error while creating mapping Incident")
+            traceback.print_exc()
+            pass
 
 # ======================== Util ======================== 
 
@@ -77,7 +81,7 @@ def handle_ended_incidents(collection: collection, new_data: list):
         with open('../last_data.json', 'w'):
             pass
     ended_incidents = [x for x in last_data if x not in new_data]
-    ended_query = {'_id': {'$in': [x.indicent_id for x in ended_incidents]}}
+    ended_query = {'_id': {'$in': [x.get('i') for x in ended_incidents]}}
     ended_update = {'$set': {'end_dtime': dt.datetime.now()}}
     collection.update_one(ended_query, ended_update, upsert=False)
 
