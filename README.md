@@ -1,5 +1,12 @@
 
-# lower austria fire brigade incidents mining
+<h1 align="center">
+  <br>
+  <img src="logo.png" height="256px" width="256px" alt="Logo">
+  <br>
+  🚒 lower austria fire brigade incidents mining 🚒
+  <br>
+</h1>
+
 
 This is a small project to mine data of fire brigade incidents in lower austria.
 
