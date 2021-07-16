@@ -1,4 +1,6 @@
 import datetime as dt
+from typing import Optional
+
 import requests
 from incident import Incident
 from operating_resource import OperatingResource
@@ -15,13 +17,15 @@ def save_to_db(collection: collection, data: list):
             incident_operating_ressources = load_incident_operating_ressources_from_incident_id(incident_id)
 
             item: Incident = collection.find_one({"_id": incident_id})
+            incident_tuple = incident_n_to_tuple(incident.get('n'))
 
             new_incident = Incident(
                 _id=incident_id,
                 alarm_keyword=incident.get('a') if incident.get('a') != '' else None,
                 alarm_description=incident.get('m') if incident.get('m') != '' else None,
                 place=incident.get('o') if incident.get('o') != '' else None,
-                incident_number=incident_n_to_number(incident.get('n')),
+                incident_number_pre=incident_tuple[0],
+                incident_number=incident_tuple[1],
                 district=district_map_mappings[incident.get('b')] if incident.get('b') != '' else None,
                 start_dtime=dt.datetime.strptime(incident.get('d') + ' ' + incident.get('t'), '%d.%m.%Y %H:%M:%S'),
                 end_dtime=None,
@@ -41,7 +45,7 @@ def save_to_db(collection: collection, data: list):
             traceback.print_exc()
             pass
 
-# ======================== Util ======================== 
+# ======================== Util ========================
 
 district_map_mappings = {
     '01': 'Amstetten',
@@ -49,6 +53,7 @@ district_map_mappings = {
     '03': 'Bruck/Leitha',
     '04': 'Gänserndorf',
     '05': 'Gmünd',
+    '06': 'Schwechtat',
     '061': 'Klosterneuburg',
     '062': 'Purkersdorf',
     '063': 'Schwechat',
@@ -75,29 +80,45 @@ BASE_URL = "https://infoscreen.florian10.info/OWS/wastlMobile/"
 def handle_ended_incidents(collection: collection, new_data: list):
     last_data = []
     try:
-        with open('../last_data.json', 'r') as f:
+        with open('last_data.json', 'r') as f:
             last_data = json.load(f)
     except FileNotFoundError:
-        with open('../last_data.json', 'w'):
+        with open('last_data.json', 'w'):
             pass
     ended_incidents = [x for x in last_data if x not in new_data]
     ended_query = {'_id': {'$in': [x.get('i') for x in ended_incidents]}}
-    ended_update = {'$set': {'end_dtime': dt.datetime.now()}}
+
+    ended_time = dt.datetime.now() - dt.timedelta(minutes=1)
+    ended_update = {'$set':
+        {
+            'end_dtime': dt.datetime(
+                ended_time.year,
+                ended_time.month,
+                ended_time.day,
+                ended_time.hour,
+                ended_time.minute,
+                0,
+                0
+            )
+        }
+    }
     collection.update_one(ended_query, ended_update, upsert=False)
 
-    with open('../last_data.json', 'w') as f:
+    with open('last_data.json', 'w') as f:
         json.dump(new_data, f)
 
 
-def incident_n_to_number(n: str) -> int:
+def incident_n_to_tuple(n: str) -> (Optional[str], Optional[int]):
     try:
         index_of_first_number = [x.isdigit() for x in n].index(True)
-        return int(n[index_of_first_number:])
+        if index_of_first_number == 0:
+            return None, int(n)
+        return n[:index_of_first_number - 1], int(n[index_of_first_number:])
     except ValueError:
-        return None
+        return None, None
     except Exception as e:
         print(e)
-        return None
+        return None, None
 
 
 def load_incident_operating_ressources_from_incident_id(incident_id: str) -> list[OperatingResource]:

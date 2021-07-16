@@ -12,7 +12,6 @@ load_dotenv()
 had_restart = False
 BASE_URL = "https://infoscreen.florian10.info/OWS/wastlMobile/"
 
-
 def load_data() -> List[dict]:
     active_incidents_resp = requests.get(
         BASE_URL + "getEinsatzAktiv.ashx",
