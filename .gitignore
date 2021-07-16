@@ -45,3 +45,4 @@ nodeLanguageServer.*/**
 .idea/
 
 last_data.json
+output.log
