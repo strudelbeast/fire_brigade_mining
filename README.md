@@ -32,7 +32,7 @@ If you want to shutdown the service only type:
 ## On Linux
 
 1. Clone this github repository to a folder (e.g. ```~/Programs/```)
-2. Add it to crontabs for repeatly update ```crontab -e */1 * * * * python3 ~/Programs/youtube_mining/src/main.py >> ~/Programs/youtube_mining/output.log 2>&1```
+2. Add it to crontabs for repeatly update ```crontab -e */1 * * * * python3 ~/Programs/youtube_mining/src/main.py >> ~/Programs/incident_mining/output.log 2>&1```
 3. Check output.log for output
 
 To update the client, go to the root folder and type ```git pull```
