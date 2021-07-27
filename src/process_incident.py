@@ -2,11 +2,13 @@ import datetime as dt
 from typing import Optional
 
 import requests
+import pickle
 from incident import Incident
 from operating_resource import OperatingResource
 from pymongo import collection
-import json
 import traceback
+from typing import List
+
 
 def save_to_db(collection: collection, data: list):
     handle_ended_incidents(collection, data)
@@ -45,6 +47,7 @@ def save_to_db(collection: collection, data: list):
             traceback.print_exc()
             pass
 
+
 # ======================== Util ========================
 
 district_map_mappings = {
@@ -77,14 +80,15 @@ district_map_mappings = {
 BASE_URL = "https://infoscreen.florian10.info/OWS/wastlMobile/"
 
 
-def handle_ended_incidents(collection: collection, new_data: list):
+def handle_ended_incidents(coll: collection, new_data: list):
     last_data = []
     try:
-        with open('last_data.json', 'r') as f:
-            last_data = json.load(f)
+        last_data: List[object] = pickle.load(open("last_data.p", 'rb'))
     except FileNotFoundError:
-        with open('last_data.json', 'w'):
-            pass
+        print(
+            dt.datetime.now().strftime("[%d-%b-%Y %H:%M:%S]"),
+            "last_data.p not found"
+        )
     ended_incidents = [x for x in last_data if x not in new_data]
     ended_query = {'_id': {'$in': [x.get('i') for x in ended_incidents]}}
 
@@ -102,10 +106,10 @@ def handle_ended_incidents(collection: collection, new_data: list):
             )
         }
     }
-    collection.update_one(ended_query, ended_update, upsert=False)
+    coll.update_one(ended_query, ended_update, upsert=False)
 
-    with open('last_data.json', 'w') as f:
-        json.dump(new_data, f)
+    with open('last_data.p', 'wb') as last_data_file:
+        pickle.dump(new_data, last_data_file)
 
 
 def incident_n_to_tuple(n: str) -> (Optional[str], Optional[int]):

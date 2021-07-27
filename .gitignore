@@ -44,5 +44,8 @@ nodeLanguageServer.*/**
 .env
 .idea/
 
-last_data.json
+last_data.p
 output.log
+*.env
+!sample.env
+*.ipynb
